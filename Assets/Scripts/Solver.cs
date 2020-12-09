@@ -122,9 +122,12 @@ public class Solver : MonoBehaviour
 						return false;
 					}
 					
-					foreach(int[] dhpos in derivationHistory)//undo the derivations
+					foreach(int[] dhpos in derivationHistory[derivationHistory.Count - 1])//undo the derivations
 					{
-						
+						solvedField[dhpos[0], dhpos[1]] = -1;
+						areaProducts[areaField[dhpos[0], dhpos[1]]] *= primes[solvedField[dhpos[0], dhpos[1]] - 1];
+						rowProducts[dhpos[0]] *= primes[solvedField[dhpos[0], dhpos[1]] - 1];
+						columnProducts[dhpos[0]] *= primes[solvedField[dhpos[0], dhpos[1]] - 1];
 					}
 					
 					x = guessHistory[ghc - 1][0];
@@ -139,7 +142,7 @@ public class Solver : MonoBehaviour
 						guessHistory.RemoveAt(ghc);
 						backtrack = true;
 					}
-					else//increment
+					else//try to increment the guess
 					{
 						bool numberFound = false;
 						
@@ -172,12 +175,15 @@ public class Solver : MonoBehaviour
 			}
 			else//continue guessing
 			{
+				bool spaceFound = false;
+				
 				for(int i = 0; i < 7; i++)//search the next free space
 				{
 					for(int j = 0; j < 7; j++)
 					{
 						if(solvedField[i, j] == -1)
 						{
+							spaceFound = true;
 							bool numberFound = false;
 							
 							for(k = 0; k < 7; k++)//find a fitting number
@@ -205,9 +211,15 @@ public class Solver : MonoBehaviour
 						}
 					}
 				}
+				
+				if(!spaceFound)//all fields are filled
+				{
+					Debug.Log("Solved successfully");
+					return true;
+				}
 			}
 			
-			break;
+			fg.PrintNumberField(solvedField);
 		}
 		
 		return true;

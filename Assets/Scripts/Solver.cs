@@ -10,7 +10,8 @@ public class Solver : MonoBehaviour
 	float[] areaProducts;
 	float[] rowProducts;
 	float[] columnProducts;
-	bool changeOccurred = false;
+	int[] emptySpotsPerArea;
+	bool changeOccurred = true;
 	
 	float[] primes = {2f, 3f, 5f, 7f, 11f, 13f, 17f};
 	
@@ -21,23 +22,27 @@ public class Solver : MonoBehaviour
 		int[,] areaField = ag.GenerateAreas(numberField, 0f);
 		int[] areaSums = ag.CalcSums(numberField, areaField);
 		
+		fg.PrintNumberField(areaField);
+		Debug.Log("");
 		fg.PrintNumberField(numberField);
 		Debug.Log("");
 		int areaCount = areaSums.Length;
+		emptySpotsPerArea = new int[areaCount];
 		bool[] toChange = new bool[areaCount];
 		
 		for(int i = 0; i < 7; i++)
 		{
 			numberField[i, 6] = -1;
-			numberField[6, i] = -1;
+			numberField[i, 5] = -1;
 		}
 		
 		fg.PrintNumberField(numberField);
+		Debug.Log("");
 		
 		if(Solve(numberField, areaField, areaSums))
 		{
-			Debug.Log("Successfully solved");
 			fg.PrintNumberField(numberField);
+			Debug.Log("Successfully solved");
 		}
 		else
 		{
@@ -75,17 +80,23 @@ public class Solver : MonoBehaviour
 					rowProducts[i] /= primes[solvedField[i, j] - 1];
 					columnProducts[j] /= primes[solvedField[i, j] - 1];
 				}
+				else
+				{
+					emptySpotsPerArea[areaField[i, j]]++;
+				}
 			}
 		}
 		
 		List<int[]> guessHistory = new List<int[]>();
 		List<List<int[]>> derivationHistory = new List<List<int[]>>();
-		List<int[]> dPosList;
+		List<int[]> dPosList = new List<int[]>();
 		bool mistake = false;
 		bool backtrack = true;
 		
 		while(true)//REEEEEEEEEEEEEEEEEEEEEEEEEEE
 		{
+			changeOccurred = true;
+			
 			if(!mistake)
 			{
 				dPosList = new List<int[]>();//list of the derivations for one single step/guess
@@ -94,44 +105,51 @@ public class Solver : MonoBehaviour
 			
 			while(changeOccurred && !mistake)
 			{
+				Debug.Log("derivation phase");
 				changeOccurred = false;
 				mistake = false;
 				
 				if(!InsertLastNumbersForAreas(solvedField, areaField, areaSums, dPosList))
 				{
 					mistake = true;
+					derivationHistory.RemoveAt(derivationHistory.Count - 1);
 					break;
 				}
 				if(!InsertLastNumbersForRowsColumns(solvedField, areaField, areaSums, dPosList))
 				{
 					mistake = true;
+					derivationHistory.RemoveAt(derivationHistory.Count - 1);
 					break;
 				}
 			}
 			
 			if(mistake)//backtrack
 			{
+				Debug.Log("backtrack phase");
 				while(backtrack)
 				{
-					ghc = guessHistory.Count;
+					int ghc = guessHistory.Count;
 					backtrack = false;
 					
 					if(ghc == 0)//there is nothing to backtrack, thus the field is not solvable
 					{
-						Debug.Log("This field has no solutions")
+						Debug.Log("This field has no solutions");
 						return false;
 					}
 					
 					foreach(int[] dhpos in derivationHistory[derivationHistory.Count - 1])//undo the derivations
 					{
-						solvedField[dhpos[0], dhpos[1]] = -1;
 						areaProducts[areaField[dhpos[0], dhpos[1]]] *= primes[solvedField[dhpos[0], dhpos[1]] - 1];
 						rowProducts[dhpos[0]] *= primes[solvedField[dhpos[0], dhpos[1]] - 1];
 						columnProducts[dhpos[0]] *= primes[solvedField[dhpos[0], dhpos[1]] - 1];
+						solvedField[dhpos[0], dhpos[1]] = -1;
+						emptySpotsPerArea[areaField[dhpos[0], dhpos[1]]]++;
 					}
 					
-					x = guessHistory[ghc - 1][0];
-					y = guessHistory[ghc - 1][1];
+					derivationHistory.RemoveAt(derivationHistory.Count - 1);
+					
+					int x = guessHistory[ghc - 1][0];
+					int y = guessHistory[ghc - 1][1];
 					
 					areaProducts[areaField[x, y]] *= primes[solvedField[x, y] - 1];
 					rowProducts[x] *= primes[solvedField[x, y] - 1];
@@ -146,19 +164,20 @@ public class Solver : MonoBehaviour
 					{
 						bool numberFound = false;
 						
-						for(int k = solvedField[x, y] + 1, k < 7; k++)
+						for(int k = solvedField[x, y] + 1; k < 7; k++)
 						{
-							float quotient1 = areaProducts[areaField[x, y]] / primes[k - 1];
-							float quotient2 = rowProducts[x] / primes[k - 1];
-							float quotient3 = columnProducts[y] / primes[k - 1];
+							float quotient1 = areaProducts[areaField[x, y]] / primes[k];
+							float quotient2 = rowProducts[x] / primes[k];
+							float quotient3 = columnProducts[y] / primes[k];
 							
-							if(!fg.HasDecimals(quotient1) && !fg.HasDecimals(quotient2) && !fg.HasDecimals(quotient3))//k can be inserted here
+							if(!fg.HasDecimals(quotient1) && !fg.HasDecimals(quotient2) && !fg.HasDecimals(quotient3) && DoesNumberFitArea(solvedField, areaField, areaSums, x, y))//k can be inserted here
 							{
-								solvedField[x, y] = k;
-								areaProducts[areaField[x, y]] /= primes[k - 1];
-								rowProducts[x] /= primes[k - 1];
-								columnProducts[y] /= primes[k - 1];
+								solvedField[x, y] = k + 1;
+								areaProducts[areaField[x, y]] /= primes[k];
+								rowProducts[x] /= primes[k];
+								columnProducts[y] /= primes[k];
 								numberFound = true;
+								emptySpotsPerArea[areaField[x, y]]--;
 							}
 						}
 						
@@ -175,6 +194,7 @@ public class Solver : MonoBehaviour
 			}
 			else//continue guessing
 			{
+				Debug.Log("guess phase");
 				bool spaceFound = false;
 				
 				for(int i = 0; i < 7; i++)//search the next free space
@@ -186,20 +206,22 @@ public class Solver : MonoBehaviour
 							spaceFound = true;
 							bool numberFound = false;
 							
-							for(k = 0; k < 7; k++)//find a fitting number
+							for(int k = 0; k < 7; k++)//find a fitting number
 							{
-								float quotient1 = areaProducts[areaField[i, j]] / primes[k - 1];
-								float quotient2 = rowProducts[i] / primes[k - 1];
-								float quotient3 = columnProducts[j] / primes[k - 1];
+								float quotient1 = areaProducts[areaField[i, j]] / primes[k];
+								float quotient2 = rowProducts[i] / primes[k];
+								float quotient3 = columnProducts[j] / primes[k];
 								
-								if(!fg.HasDecimals(quotient1) && !fg.HasDecimals(quotient2) && !fg.HasDecimals(quotient3))//k can be inserted here
+								if(!fg.HasDecimals(quotient1) && !fg.HasDecimals(quotient2) && !fg.HasDecimals(quotient3) && DoesNumberFitArea(solvedField, areaField, areaSums, i, j))//k can be inserted here
 								{
-									solvedField[i, j] = k;
-									areaProducts[areaField[i, j]] /= primes[k - 1];
-									rowProducts[i] /= primes[k - 1];
-									columnProducts[j] /= primes[k - 1];
-									guessHistory.Add[new int[2] {i, j}]
+									Debug.Log("guess was placed");
+									solvedField[i, j] = k + 1;
+									areaProducts[areaField[i, j]] /= primes[k];
+									rowProducts[i] /= primes[k];
+									columnProducts[j] /= primes[k];
+									guessHistory.Add(new int[2] {i, j});
 									numberFound = true;
+									emptySpotsPerArea[areaField[i, j]]--;
 									break;
 								}
 							}
@@ -208,18 +230,25 @@ public class Solver : MonoBehaviour
 							{
 								mistake = true;
 							}
+							
+							break;
 						}
+					}
+					
+					if(spaceFound)
+					{
+						break;
 					}
 				}
 				
 				if(!spaceFound)//all fields are filled
 				{
-					Debug.Log("Solved successfully");
 					return true;
 				}
 			}
 			
 			fg.PrintNumberField(solvedField);
+			Debug.Log("");
 		}
 		
 		return true;
@@ -229,19 +258,7 @@ public class Solver : MonoBehaviour
 	{
 		bool noMistake = true;
 		int areaCount = areaSums.Length;
-		int[] emptySpotsPerArea = new int[areaCount];
 		List<int[]> changes = new List<int[]>();//add position where change occurred
-		
-		for(int i = 0; i < 7; i++)
-		{
-			for(int j = 0; j < 7; j++)
-			{
-				if(solvedField[i, j] == -1)
-				{
-					emptySpotsPerArea[areaField[i, j]]++;
-				}
-			}
-		}
 		
 		for(int i = 0; i < 7; i++)
 		{
@@ -274,7 +291,8 @@ public class Solver : MonoBehaviour
 						rowProducts[i] /= primes[missingNumber - 1];
 						columnProducts[j] /= primes[missingNumber - 1];
 						changeOccurred = true;
-						dPosList.Add[new int[2] {i, j}];
+						emptySpotsPerArea[areaField[i, j]]--;
+						dPosList.Add(new int[2] {i, j});
 					}
 					else//the missing number is already contained in the area/row/column
 					{
@@ -300,6 +318,7 @@ public class Solver : MonoBehaviour
 				rowProducts[element[0]] *= primes[number - 1];
 				columnProducts[element[1]] *= primes[number - 1];
 				solvedField[element[0], element[1]] = -1;
+				emptySpotsPerArea[areaField[element[0], element[1]]]++;
 			}
 		}
 		
@@ -348,7 +367,7 @@ public class Solver : MonoBehaviour
 						float quotient1 = areaProducts[areaField[i, j]] / primes[missingNumber - 1];
 						float quotient2 = columnProducts[j] / primes[missingNumber - 1];
 						
-						if(!fg.HasDecimals(quotient1) && !fg.HasDecimals(quotient2))
+						if(!fg.HasDecimals(quotient1) && !fg.HasDecimals(quotient2) && DoesNumberFitArea(solvedField, areaField, areaSums, i, j))
 						{
 							changes.Add(new int[2] {i, j});
 							solvedField[i, j] = missingNumber;
@@ -357,7 +376,8 @@ public class Solver : MonoBehaviour
 							rowProducts[i] /= primes[missingNumber - 1];
 							columnProducts[j] /= primes[missingNumber - 1];
 							changeOccurred = true;
-							dPosList.Add[new int[2] {i, j}];
+							emptySpotsPerArea[areaField[i, j]]--;
+							dPosList.Add(new int[2] {i, j});
 						}
 						else//the missing number is already contained in the area/column
 						{
@@ -382,7 +402,7 @@ public class Solver : MonoBehaviour
 						float quotient1 = areaProducts[areaField[i, j]] / primes[missingNumber - 1];
 						float quotient2 = rowProducts[i] / primes[missingNumber - 1];
 						
-						if(!fg.HasDecimals(quotient1) && !fg.HasDecimals(quotient2))
+						if(!fg.HasDecimals(quotient1) && !fg.HasDecimals(quotient2) && DoesNumberFitArea(solvedField, areaField, areaSums, i, j))
 						{
 							changes.Add(new int[2] {i, j});
 							solvedField[i, j] = missingNumber;
@@ -391,7 +411,8 @@ public class Solver : MonoBehaviour
 							rowProducts[i] /= primes[missingNumber - 1];
 							columnProducts[j] /= primes[missingNumber - 1];
 							changeOccurred = true;
-							dPosList.Add[new int[2] {i, j}];
+							dPosList.Add(new int[2] {i, j});
+							emptySpotsPerArea[areaField[i, j]]--;
 						}
 						else//the missing number is already contained in the area/row
 						{
@@ -418,6 +439,7 @@ public class Solver : MonoBehaviour
 				rowProducts[element[0]] *= primes[number - 1];
 				columnProducts[element[1]] *= primes[number - 1];
 				solvedField[element[0], element[1]] = -1;
+				emptySpotsPerArea[areaField[element[0], element[1]]]++;
 			}
 		}
 		
@@ -431,5 +453,32 @@ public class Solver : MonoBehaviour
 		float quotient3 = columnProducts[j] / primes[number - 1];
 		bool res = fg.HasDecimals(quotient1) && fg.HasDecimals(quotient2) && fg.HasDecimals(quotient3);
 		return res;
+	}
+	
+	bool DoesNumberFitArea(int[,] numberField, int[,] areaField, int[] areaSums, int x, int y)
+	{
+		int areaIndex = areaField[x, y];
+		int number = numberField[x, y];
+		int sum = 0;
+		
+		for(int i = 0; i < 7; i++)
+		{
+			for(int j = 0; j < 7; j++)
+			{
+				if(areaField[i, j] == areaIndex && numberField[i, j] != -1)
+				{
+					sum += numberField[i, j];
+				}
+			}
+		}
+		
+		Debug.Log("doesnumberfitarea");
+		Debug.Log(areaSums[areaIndex]);
+		Debug.Log(areaField[x, y]);
+		Debug.Log(x);
+		Debug.Log(y);
+		Debug.Log(sum);
+		
+		return areaSums[areaIndex] - sum > number;
 	}
 }

@@ -15,7 +15,7 @@ public class AreaGenerator : MonoBehaviour
 	
 	const double mean = 4d;//make these adjustable in the system maybe, provide option to test distributions on a large scale
 	const double sigma = 0.7d;
-	const float mergeProbability = 0.5f;
+	const float mergeProbability = 0.7f;
 	const int maxAreaSize = 7;
 	const bool sizeOutput = true;
 	
@@ -278,17 +278,40 @@ public class AreaGenerator : MonoBehaviour
 					candidateNeighbors.Add(new int[2] {x, y + 1});
 				}
 				
-				int mergePos = UnityEngine.Random.Range(0, candidateNeighbors.Count);
-				areaArray[af[candidateNeighbors[mergePos][0], candidateNeighbors[mergePos][1]]]--;
-				areaArray[i]++;
-				af[candidateNeighbors[mergePos][0], candidateNeighbors[mergePos][1]] = i;
+				for(int j = candidateNeighbors.Count - 1; j >= 0; j--)//ensure that no area is split in half
+				{
+					int[] candidatePos = candidateNeighbors[j];
+					int candidateArea = af[candidatePos[0], candidatePos[1]];
+					int count = 0;
+					
+					for(int k = 0; k < candidateNeighbors.Count; k++)
+					{
+						if(af[candidateNeighbors[k][0], candidateNeighbors[k][1]] == candidateArea)
+						{
+							count++;
+						}
+					}
+					
+					if(count > 1)
+					{
+						candidateNeighbors.RemoveAt(j);
+					}
+				}
+				
+				if(candidateNeighbors.Count > 0)//merge
+				{
+					int mergePos = UnityEngine.Random.Range(0, candidateNeighbors.Count);
+					areaArray[af[candidateNeighbors[mergePos][0], candidateNeighbors[mergePos][1]]]--;
+					areaArray[i]++;
+					af[candidateNeighbors[mergePos][0], candidateNeighbors[mergePos][1]] = i;
+				}
 			}
 		}
 		
 		return af;
 	}
 	
-	int[] FindPositionOfArea(int[,] af, int areaID)//find the first position at which an area is found
+	public int[] FindPositionOfArea(int[,] af, int areaID)//find the first position at which an area is found
 	{
 		for(int i = 0; i < 7; i++)
 		{

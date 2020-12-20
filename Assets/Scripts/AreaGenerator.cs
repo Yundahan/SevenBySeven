@@ -15,7 +15,7 @@ public class AreaGenerator : MonoBehaviour
 	
 	const double mean = 4d;//make these adjustable in the system maybe, provide option to test distributions on a large scale
 	const double sigma = 0.7d;
-	const float mergeProbability = 0.7f;
+	const float mergeProbability = 0.8f;
 	const int maxAreaSize = 7;
 	const bool sizeOutput = true;
 	
@@ -104,6 +104,7 @@ public class AreaGenerator : MonoBehaviour
 				if(x < 6 && areaField[x + 1, y] == -1 && !fg.HasDecimals(product / primes[nf[x + 1, y] - 1]))//check which adjacent positions are still free
 				{
 					int[] newPos = new int[2] {x + 1, y};
+					
 					if(FindArrayInList(dofs, newPos) == -1)
 					{
 						dofs.Add(new int[2] {x + 1, y});
@@ -112,6 +113,7 @@ public class AreaGenerator : MonoBehaviour
 				if(x > 0 && areaField[x - 1, y] == -1 && !fg.HasDecimals(product / primes[nf[x - 1, y] - 1]))
 				{
 					int[] newPos = new int[2] {x - 1, y};
+					
 					if(FindArrayInList(dofs, newPos) == -1)
 					{
 						dofs.Add(new int[2] {x - 1, y});
@@ -120,6 +122,7 @@ public class AreaGenerator : MonoBehaviour
 				if(y < 6 && areaField[x, y + 1] == -1 && !fg.HasDecimals(product / primes[nf[x, y + 1] - 1]))
 				{
 					int[] newPos = new int[2] {x, y + 1};
+					
 					if(FindArrayInList(dofs, newPos) == -1)
 					{
 						dofs.Add(new int[2] {x, y + 1});
@@ -128,6 +131,7 @@ public class AreaGenerator : MonoBehaviour
 				if(y > 0 && areaField[x, y - 1] == -1 && !fg.HasDecimals(product / primes[nf[x, y - 1] - 1]))
 				{
 					int[] newPos = new int[2] {x, y - 1};
+					
 					if(FindArrayInList(dofs, newPos) == -1)
 					{
 						dofs.Add(new int[2] {x, y - 1});
@@ -182,7 +186,7 @@ public class AreaGenerator : MonoBehaviour
 			areaCount++;
 		}
 		
-		areaField = MergeOnes(areaField, areaCount);
+		areaField = MergeOnes(nf, areaField, areaCount);
 		CalcAreaSizes(areaField, areaCount, false);
 		
 		if(!TestAreaCorrectness(nf, areaField, areaCount))
@@ -222,6 +226,22 @@ public class AreaGenerator : MonoBehaviour
 		return res;
 	}
 	
+	public int[] FindPositionOfArea(int[,] af, int areaID)//find the first position at which an area is found
+	{
+		for(int i = 0; i < 7; i++)
+		{
+			for(int j = 0; j < 7; j++)
+			{
+				if(af[i, j] == areaID)
+				{
+					return new int[2] {i, j};
+				}
+			}
+		}
+		
+		return new int[2] {-1, -1};
+	}
+	
 	int FindArrayInList(List<int[]> list, int[] array)//find first position of a two element array in a list
 	{
 		int res = 0;
@@ -239,10 +259,10 @@ public class AreaGenerator : MonoBehaviour
 		return -1;
 	}
 	
-	int[,] MergeOnes(int[,] af, int areaCount)//merge areas of size one with neighboring fields
+	int[,] MergeOnes(int[,] nf, int[,] af, int areaCount)//merge areas of size one with neighboring fields
 	{
 		int[] areaArray = new int[areaCount];
-		List<int[]> candidateNeighbors = new List<int[]>();
+		List<int[]> candidates = new List<int[]>();
 		
 		for(int i = 0; i < 7; i++)
 		{
@@ -256,54 +276,28 @@ public class AreaGenerator : MonoBehaviour
 		{
 			if(areaArray[i] == 1 && mergeProbability > UnityEngine.Random.Range(0f, 1f))
 			{
-				candidateNeighbors.Clear();
+				candidates.Clear();
 				int[] position = FindPositionOfArea(af, i);
-				int x = position[0];
-				int y = position[1];
+				ReturnNeighbors(position, candidates);
 				
-				if(x > 0)
+				for(int j = candidates.Count - 1; j >= 0; j--)//ensure that the number is not already contained
 				{
-					candidateNeighbors.Add(new int[2] {x - 1, y});
-				}
-				if(x < 6)
-				{
-					candidateNeighbors.Add(new int[2] {x + 1, y});
-				}
-				if(y > 0)
-				{
-					candidateNeighbors.Add(new int[2] {x, y - 1});
-				}
-				if(y < 6)
-				{
-					candidateNeighbors.Add(new int[2] {x, y + 1});
-				}
-				
-				for(int j = candidateNeighbors.Count - 1; j >= 0; j--)//ensure that no area is split in half
-				{
-					int[] candidatePos = candidateNeighbors[j];
+					int[] candidatePos = candidates[j];
 					int candidateArea = af[candidatePos[0], candidatePos[1]];
-					int count = 0;
+					float product = GetAreaProduct(nf, af, candidateArea);
 					
-					for(int k = 0; k < candidateNeighbors.Count; k++)
+					if(fg.HasDecimals(product / primes[nf[candidatePos[0], candidatePos[1]] - 1]))
 					{
-						if(af[candidateNeighbors[k][0], candidateNeighbors[k][1]] == candidateArea)
-						{
-							count++;
-						}
-					}
-					
-					if(count > 1)
-					{
-						candidateNeighbors.RemoveAt(j);
+						candidates.RemoveAt(j);
 					}
 				}
 				
-				if(candidateNeighbors.Count > 0)//merge
+				if(candidates.Count > 0)//merge
 				{
-					int mergePos = UnityEngine.Random.Range(0, candidateNeighbors.Count);
-					areaArray[af[candidateNeighbors[mergePos][0], candidateNeighbors[mergePos][1]]]--;
-					areaArray[i]++;
-					af[candidateNeighbors[mergePos][0], candidateNeighbors[mergePos][1]] = i;
+					int mergePos = UnityEngine.Random.Range(0, candidates.Count);
+					areaArray[af[candidates[mergePos][0], candidates[mergePos][1]]]++;
+					areaArray[i]--;
+					af[position[0], position[1]] = af[candidates[mergePos][0], candidates[mergePos][1]];
 				}
 			}
 		}
@@ -311,20 +305,45 @@ public class AreaGenerator : MonoBehaviour
 		return af;
 	}
 	
-	public int[] FindPositionOfArea(int[,] af, int areaID)//find the first position at which an area is found
+	float GetAreaProduct(int[,] nf, int[,] af, int areaID)
 	{
+		float product = 510510f;
+		
 		for(int i = 0; i < 7; i++)
 		{
 			for(int j = 0; j < 7; j++)
 			{
 				if(af[i, j] == areaID)
 				{
-					return new int[2] {i, j};
+					product /= primes[nf[i, j] - 1];
 				}
 			}
 		}
 		
-		return new int[2] {-1, -1};
+		return product;
+	}
+	
+	void ReturnNeighbors(int[] pos, List<int[]> res)
+	{
+		int x = pos[0];
+		int y = pos[1];
+		
+		if(x > 0)
+		{
+			res.Add(new int[2] {x - 1, y});
+		}
+		if(x < 6)
+		{
+			res.Add(new int[2] {x + 1, y});
+		}
+		if(y > 0)
+		{
+			res.Add(new int[2] {x, y - 1});
+		}
+		if(y < 6)
+		{
+			res.Add(new int[2] {x, y + 1});
+		}
 	}
 	
 	int GenerateAreaSize()//normal distribution

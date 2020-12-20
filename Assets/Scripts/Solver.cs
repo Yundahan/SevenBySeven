@@ -6,6 +6,7 @@ public class Solver : MonoBehaviour
 {
 	public FieldGenerator fg;
 	public AreaGenerator ag;
+	public Renderer ren;
 	
 	float[] areaProducts;
 	float[] rowProducts;
@@ -24,7 +25,7 @@ public class Solver : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        
+		
     }
 	
 	public bool Solve(int[,] solvedField, int[,] areaField, int[] areaSums)
@@ -62,6 +63,7 @@ public class Solver : MonoBehaviour
 		List<int[]> dPosList = new List<int[]>();
 		bool mistake = false;
 		bool backtrack = true;
+		LogCurrentState(solvedField, guessHistory, derivationHistory);
 		
 		while(true)//REEEEEEEEEEEEEEEEEEEEEEEEEEE
 		{
@@ -127,7 +129,8 @@ public class Solver : MonoBehaviour
 					
 					if(solvedField[x, y] == 7)//this cant be incremented, backtrack further
 					{
-						Debug.Log("remove guess 170");
+						emptySpotsPerArea[areaField[x, y]]++;
+						solvedField[x, y] = -1;
 						guessHistory.RemoveAt(ghc - 1);
 						backtrack = true;
 					}
@@ -149,17 +152,19 @@ public class Solver : MonoBehaviour
 								rowProducts[x] /= primes[k];
 								columnProducts[y] /= primes[k];
 								numberFound = true;
-								emptySpotsPerArea[areaField[x, y]]--;
 								break;
 							}
 						}
 						
 						if(!numberFound)//increment failed, remove guess and continue backtrack
 						{
-							Debug.Log("remove guess 198");
+							emptySpotsPerArea[areaField[x, y]]++;
+							solvedField[x, y] = -1;
 							guessHistory.RemoveAt(ghc - 1);
 							backtrack = true;
 						}
+					
+						LogCurrentState(solvedField, guessHistory, derivationHistory);
 					}
 				}
 				
@@ -188,7 +193,6 @@ public class Solver : MonoBehaviour
 								
 								if(!fg.HasDecimals(quotient1) && !fg.HasDecimals(quotient2) && !fg.HasDecimals(quotient3) && DoesNumberFitArea(solvedField, areaField, areaSums, i, j))//k can be inserted here
 								{
-									Debug.Log("add guess 230");
 									solvedField[i, j] = k + 1;
 									areaProducts[areaField[i, j]] /= primes[k];
 									rowProducts[i] /= primes[k];
@@ -221,8 +225,51 @@ public class Solver : MonoBehaviour
 				}
 			}
 			
+			LogCurrentState(solvedField, guessHistory, derivationHistory);
 			fg.PrintNumberField(solvedField);
 			Debug.Log("");
+		}
+	}
+	
+	void LogCurrentState(int[,] numberField, List<int[]> guessHistory, List<List<int[]>> derivationHistory)
+	{
+		int[,] temp = new int[7, 7];
+		Color[,] tempSupp = new Color[7, 7];
+		CopyField(numberField, temp);
+		ren.history.Add(temp);
+		
+		for(int i = 0; i < 7; i++)
+		{
+			for(int j = 0; j < 7; j++)
+			{
+				tempSupp[i, j] = Color.black;
+			}
+		}
+		
+		foreach(int[] pos in guessHistory)
+		{
+			tempSupp[pos[0], pos[1]] = Color.red;
+		}
+		
+		foreach(List<int[]> sublist in derivationHistory)
+		{
+			foreach(int[] pos in sublist)
+			{
+				tempSupp[pos[0], pos[1]] = Color.blue;
+			}
+		}
+		
+		ren.historySupport.Add(tempSupp);
+	}
+	
+	void CopyField(int[,] source, int[,] target)
+	{
+		for(int i = 0; i < 7; i++)
+		{
+			for(int j = 0; j < 7; j++)
+			{
+				target[i, j] = source[i, j];
+			}
 		}
 	}
 	

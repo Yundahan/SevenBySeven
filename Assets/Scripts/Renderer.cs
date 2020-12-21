@@ -15,6 +15,8 @@ public class Renderer : MonoBehaviour
 	public List<int[,]> history = new List<int[,]>();
 	public List<Color[,]> historySupport = new List<Color[,]>();
 	int currentPos = 0;
+	int savedPos = 0;
+	bool logger = true;
 	
 	float smallWidth = 0.05f;
 	float bigWidth = 0.1f;
@@ -26,10 +28,12 @@ public class Renderer : MonoBehaviour
 		int[,] areaField = ag.GenerateAreas(numberField, 0f);
 		int[] areaSums = ag.CalcSums(numberField, areaField);
 		
-		fg.PrintNumberField(areaField);
-		Debug.Log("");
-		fg.PrintNumberField(numberField);
-		Debug.Log("");
+		if(logger)
+		{
+			List<int[]> dummy = new List<int[]>();
+			List<List<int[]>> dummy2 = new List<List<int[]>>();
+			s.LogCurrentState(numberField, dummy, dummy2);
+		}
 		
 		for(int i = 0; i < 7; i++)
 		{
@@ -38,15 +42,14 @@ public class Renderer : MonoBehaviour
 			numberField[i, 4] = -1;
 			numberField[i, 3] = -1;
 			numberField[i, 2] = -1;
+			numberField[i, 1] = -1;
+			numberField[i, 0] = -1;
 		}
 		
 		RenderNumberField(numberField);
-		fg.PrintNumberField(numberField);
-		Debug.Log("");
 		
-		if(s.Solve(numberField, areaField, areaSums))
+		if(s.Solve(numberField, areaField, areaSums, logger))
 		{
-			fg.PrintNumberField(numberField);
 			Debug.Log("Successfully solved");
 		}
 		else
@@ -54,28 +57,44 @@ public class Renderer : MonoBehaviour
 			Debug.Log("Not solvable");
 		}
 		
+		/*int solutionCount = s.SolveCount(numberField, areaField, areaSums, logger);
+		
+		if(solutionCount == 1)
+		{
+			Debug.Log("Successfully solved");
+		}
+		else if(solutionCount == 2)
+		{
+			Debug.Log("One of multiple solutions found");
+		}
+		else
+		{
+			Debug.Log("Not solvable");
+		}*/
+		
 		RenderGrid(areaField);
 		RenderAreaSums(areaField, areaSums);
-		
-		foreach(int[,] field in history)
-		{
-			fg.PrintNumberField(field);
-		}
     }
 
     // Update is called once per frame
     void Update()
     {
-		if(history.Count == 0)
+		if(history.Count == 0 || !logger)
 		{
 			return;
 		}
 		
-        if(Input.GetKeyDown("space"))
+        if(Input.GetKeyDown(KeyCode.E))
 		{
 			ClearNumberField();
 			currentPos = 0;
-			RenderNumberField(history[currentPos], historySupport[currentPos]);
+			RenderNumberField(history[currentPos], historySupport[currentPos], currentPos);
+		}
+		else if(Input.GetKeyDown(KeyCode.T))
+		{
+			ClearNumberField();
+			currentPos = history.Count - 1;
+			RenderNumberField(history[currentPos], historySupport[currentPos], currentPos);
 		}
         else if(Input.GetKeyDown(KeyCode.RightArrow))
 		{
@@ -86,7 +105,7 @@ public class Renderer : MonoBehaviour
 			
 			ClearNumberField();
 			currentPos++;
-			RenderNumberField(history[currentPos], historySupport[currentPos]);
+			RenderNumberField(history[currentPos], historySupport[currentPos], currentPos);
 		}
         else if(Input.GetKeyDown(KeyCode.LeftArrow))
 		{
@@ -97,7 +116,17 @@ public class Renderer : MonoBehaviour
 			
 			ClearNumberField();
 			currentPos--;
-			RenderNumberField(history[currentPos], historySupport[currentPos]);
+			RenderNumberField(history[currentPos], historySupport[currentPos], currentPos);
+		}
+		else if(Input.GetKeyDown(KeyCode.S))
+		{
+			savedPos = currentPos;
+		}
+		else if(Input.GetKeyDown(KeyCode.D))
+		{
+			ClearNumberField();
+			currentPos = savedPos;
+			RenderNumberField(history[currentPos], historySupport[currentPos], currentPos);
 		}
     }
 	
@@ -125,7 +154,7 @@ public class Renderer : MonoBehaviour
 		}
 	}
 	
-	public void RenderNumberField(int[,] numberField, Color[,] colorField)//render colored text
+	public void RenderNumberField(int[,] numberField, Color[,] colorField, int currentPos)//render colored text
 	{
 		for(int i = 0; i < 7; i++)
 		{
@@ -147,6 +176,18 @@ public class Renderer : MonoBehaviour
 				}
 			}
 		}
+		
+		GameObject t = new GameObject("fieldtext");
+		t.transform.SetParent(canvas.transform);
+		Text r = t.AddComponent<Text>();
+		r.text = currentPos.ToString();
+		r.fontSize = 50;
+		r.color = Color.black;
+		r.font = Resources.GetBuiltinResource(typeof(Font), "Arial.ttf") as Font;
+		r.transform.localScale = new Vector3(1f, 1f, 1f);
+		r.alignment = TextAnchor.MiddleCenter;
+		t.transform.position = new Vector3(-1f, -3.5f, 0f);
+		fieldtexts.Add(t);
 	}
 	
 	void RenderGrid(int[,] areaField)

@@ -5,7 +5,6 @@ using UnityEngine;
 public class Solver : MonoBehaviour
 {
 	public FieldGenerator fg;
-	public AreaGenerator ag;
 	public Renderer ren;
 	
 	float[] areaProducts;

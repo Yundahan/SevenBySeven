@@ -7,17 +7,16 @@ public class AreaGenerator : MonoBehaviour
 {
 	public FieldGenerator fg;
 	
+	const double mean = 4d;
+	const double sigma = 0.7d;
+	const float mergeProbability = 0.8f;
+	const int maxAreaSize = 7;
+	
 	int[,] numberField;
 	System.Random rand = new System.Random();
 	int[] sizes = new int[maxAreaSize + 1];
 	
 	float[] primes = {2f, 3f, 5f, 7f, 11f, 13f, 17f};
-	
-	const double mean = 4d;//make these adjustable in the system maybe, provide option to test distributions on a large scale
-	const double sigma = 0.7d;
-	const float mergeProbability = 0.8f;
-	const int maxAreaSize = 7;
-	const bool sizeOutput = true;
 	
     // Start is called before the first frame update
     void Start()

@@ -5,81 +5,34 @@ using UnityEngine.UI;
 
 public class Renderer : MonoBehaviour
 {
-	public FieldGenerator fg;
 	public AreaGenerator ag;
-	public Solver s;
 	public Canvas canvas;
 	
 	public List<GameObject> fieldtexts = new List<GameObject>();
+	public List<GameObject> gridlines = new List<GameObject>();
+	public List<GameObject> areaObjs = new List<GameObject>();
 	
 	public List<int[,]> history = new List<int[,]>();
 	public List<Color[,]> historySupport = new List<Color[,]>();
+	bool logger = true;
 	int currentPos = 0;
 	int savedPos = 0;
-	bool logger = true;
 	
-	float smallWidth = 0.05f;
+	public Material lineMaterial;
+	
+	float smallWidth = 0.03f;
 	float bigWidth = 0.1f;
 	
     // Start is called before the first frame update
     void Start()
     {
-        int[,] numberField = fg.GenerateField(0f);
-		int[,] areaField = ag.GenerateAreas(numberField, 0f);
-		int[] areaSums = ag.CalcSums(numberField, areaField);
 		
-		if(logger)
-		{
-			List<int[]> dummy = new List<int[]>();
-			List<List<int[]>> dummy2 = new List<List<int[]>>();
-			s.LogCurrentState(numberField, dummy, dummy2);
-		}
-		
-		for(int i = 0; i < 7; i++)
-		{
-			numberField[i, 6] = -1;
-			numberField[i, 5] = -1;
-			numberField[i, 4] = -1;
-			numberField[i, 3] = -1;
-			numberField[i, 2] = -1;
-			numberField[i, 1] = -1;
-			numberField[i, 0] = -1;
-		}
-		
-		RenderNumberField(numberField);
-		
-		if(s.Solve(numberField, areaField, areaSums, logger))
-		{
-			Debug.Log("Successfully solved");
-		}
-		else
-		{
-			Debug.Log("Not solvable");
-		}
-		
-		/*int solutionCount = s.SolveCount(numberField, areaField, areaSums, logger);
-		
-		if(solutionCount == 1)
-		{
-			Debug.Log("Successfully solved");
-		}
-		else if(solutionCount == 2)
-		{
-			Debug.Log("One of multiple solutions found");
-		}
-		else
-		{
-			Debug.Log("Not solvable");
-		}*/
-		
-		RenderGrid(areaField);
-		RenderAreaSums(areaField, areaSums);
     }
 
     // Update is called once per frame
     void Update()
     {
-		if(history.Count == 0 || !logger)
+		if(history.Count == 0 || !logger)//dont enable arrow keys if logger is disabled
 		{
 			return;
 		}
@@ -88,13 +41,13 @@ public class Renderer : MonoBehaviour
 		{
 			ClearNumberField();
 			currentPos = 0;
-			RenderNumberField(history[currentPos], historySupport[currentPos], currentPos);
+			RenderNumberField(history[currentPos], historySupport[currentPos]);
 		}
 		else if(Input.GetKeyDown(KeyCode.T))
 		{
 			ClearNumberField();
 			currentPos = history.Count - 1;
-			RenderNumberField(history[currentPos], historySupport[currentPos], currentPos);
+			RenderNumberField(history[currentPos], historySupport[currentPos]);
 		}
         else if(Input.GetKeyDown(KeyCode.RightArrow))
 		{
@@ -105,7 +58,7 @@ public class Renderer : MonoBehaviour
 			
 			ClearNumberField();
 			currentPos++;
-			RenderNumberField(history[currentPos], historySupport[currentPos], currentPos);
+			RenderNumberField(history[currentPos], historySupport[currentPos]);
 		}
         else if(Input.GetKeyDown(KeyCode.LeftArrow))
 		{
@@ -116,7 +69,7 @@ public class Renderer : MonoBehaviour
 			
 			ClearNumberField();
 			currentPos--;
-			RenderNumberField(history[currentPos], historySupport[currentPos], currentPos);
+			RenderNumberField(history[currentPos], historySupport[currentPos]);
 		}
 		else if(Input.GetKeyDown(KeyCode.S))
 		{
@@ -126,7 +79,7 @@ public class Renderer : MonoBehaviour
 		{
 			ClearNumberField();
 			currentPos = savedPos;
-			RenderNumberField(history[currentPos], historySupport[currentPos], currentPos);
+			RenderNumberField(history[currentPos], historySupport[currentPos]);
 		}
     }
 	
@@ -138,23 +91,15 @@ public class Renderer : MonoBehaviour
 			{
 				if(numberField[i, j] != -1)
 				{
-					GameObject textobj = new GameObject("fieldtext");
-					textobj.transform.SetParent(canvas.transform);
-					Text rentext = textobj.AddComponent<Text>();
-					rentext.text = numberField[i, j].ToString();
-					rentext.fontSize = 50;
-					rentext.color = Color.black;
-					rentext.font = Resources.GetBuiltinResource(typeof(Font), "Arial.ttf") as Font;
-					rentext.transform.localScale = new Vector3(1f, 1f, 1f);
-					rentext.alignment = TextAnchor.MiddleCenter;
-					textobj.transform.position = new Vector3((float)(j) + 0.5f, (float)(-i) - 0.5f, 0f);
-					fieldtexts.Add(textobj);
+					GameObject textObj = new GameObject("fieldtext");
+					RenderText(textObj, numberField[i, j].ToString(), (float)(j) + 0.5f, (float)(-i) - 0.5f, 50, Color.black);
+					fieldtexts.Add(textObj);
 				}
 			}
 		}
 	}
 	
-	public void RenderNumberField(int[,] numberField, Color[,] colorField, int currentPos)//render colored text
+	public void RenderNumberField(int[,] numberField, Color[,] colorField)//render colored text
 	{
 		for(int i = 0; i < 7; i++)
 		{
@@ -162,46 +107,32 @@ public class Renderer : MonoBehaviour
 			{
 				if(numberField[i, j] != -1)
 				{
-					GameObject textobj = new GameObject("fieldtext");
-					textobj.transform.SetParent(canvas.transform);
-					Text rentext = textobj.AddComponent<Text>();
-					rentext.text = numberField[i, j].ToString();
-					rentext.fontSize = 50;
-					rentext.color = colorField[i, j];
-					rentext.font = Resources.GetBuiltinResource(typeof(Font), "Arial.ttf") as Font;
-					rentext.transform.localScale = new Vector3(1f, 1f, 1f);
-					rentext.alignment = TextAnchor.MiddleCenter;
-					textobj.transform.position = new Vector3((float)(j) + 0.5f, (float)(-i) - 0.5f, 0f);
-					fieldtexts.Add(textobj);
+					GameObject textObj = new GameObject("fieldtext");
+					RenderText(textObj, numberField[i, j].ToString(), (float)(j) + 0.5f, (float)(-i) - 0.5f, 50, colorField[i, j]);
+					fieldtexts.Add(textObj);
 				}
 			}
 		}
-		
-		GameObject t = new GameObject("fieldtext");
-		t.transform.SetParent(canvas.transform);
-		Text r = t.AddComponent<Text>();
-		r.text = currentPos.ToString();
-		r.fontSize = 50;
-		r.color = Color.black;
-		r.font = Resources.GetBuiltinResource(typeof(Font), "Arial.ttf") as Font;
-		r.transform.localScale = new Vector3(1f, 1f, 1f);
-		r.alignment = TextAnchor.MiddleCenter;
-		t.transform.position = new Vector3(-1f, -3.5f, 0f);
-		fieldtexts.Add(t);
 	}
 	
-	void RenderGrid(int[,] areaField)
+	public void RenderGrid(int[,] areaField)
 	{
 		for(int i = 0; i > -7; i--)
 		{
 			for(int j = 1; j < 7; j++)
 			{
-				LineRenderer lry = (new GameObject("line")).AddComponent<LineRenderer>();
-				lry.material.SetColor("_Color", Color.black);
+				GameObject lineObj1 = new GameObject("line");
+				LineRenderer lry = lineObj1.AddComponent<LineRenderer>();
+				
+				lry.material = lineMaterial;
+				lry.startColor = Color.black;
+				lry.endColor = Color.black;
+				
 				lry.SetPosition(0, new Vector3((float)(j), (float)(i), 0f));
 				lry.SetPosition(1, new Vector3((float)(j), (float)(i) - 1f, 0f));
 				lry.shadowCastingMode = 0;
 				lry.receiveShadows = false;
+				gridlines.Add(lineObj1);
 				
 				if(areaField[-i, j - 1] == areaField[-i, j])
 				{
@@ -212,12 +143,18 @@ public class Renderer : MonoBehaviour
 					lry.widthMultiplier = bigWidth;
 				}
 				
-				LineRenderer lrx = (new GameObject("line")).AddComponent<LineRenderer>();
-				lrx.material.SetColor("_Color", Color.black);
+				GameObject lineObj2 = new GameObject("line");
+				LineRenderer lrx = lineObj2.AddComponent<LineRenderer>();
+				
+				lrx.material = lineMaterial;
+				lrx.startColor = Color.black;
+				lrx.endColor = Color.black;
+				
 				lrx.SetPosition(0, new Vector3((float)(-i), (float)(-j), 0f));
 				lrx.SetPosition(1, new Vector3((float)(-i) + 1f, (float)(-j), 0f));
 				lrx.shadowCastingMode = 0;
 				lrx.receiveShadows = false;
+				gridlines.Add(lineObj2);
 				
 				if(areaField[j - 1, -i] == areaField[j, -i])
 				{
@@ -231,24 +168,32 @@ public class Renderer : MonoBehaviour
 		}
 	}
 	
-	void RenderAreaSums(int[,] areaField, int[] areaSums)
+	public void RenderAreaSums(int[,] areaField, int[] areaSums)
 	{
 		for(int i = 0; i < areaSums.Length; i++)
 		{
 			int[] pos = ag.FindPositionOfArea(areaField, i);
 			GameObject textobj = new GameObject("textobj");
-			textobj.transform.SetParent(canvas.transform);
-			Text rentext = textobj.AddComponent<Text>();
-			rentext.text = areaSums[i].ToString();
-			rentext.fontSize = 20;
-			rentext.color = Color.black;
-			rentext.font = Resources.GetBuiltinResource(typeof(Font), "Arial.ttf") as Font;
-			rentext.transform.localScale = new Vector3(1f, 1f, 1f);
-			textobj.transform.position = new Vector3((float)(pos[1]) + 0.6f, (float)(-pos[0]) - 0.6f, 0f);
+			RenderText(textobj, areaSums[i].ToString(), (float)(pos[1]) + 0.2f, (float)(-pos[0]) - 0.2f, 20, Color.black);
+			areaObjs.Add(textobj);
 		}
 	}
 	
-	void ClearNumberField()
+	public void RenderText(GameObject obj, string text, float x, float y, int fontSize, Color color, float width = 100f, float height = 100f)
+	{
+		obj.transform.SetParent(canvas.transform);
+		Text rentext = obj.AddComponent<Text>();
+		rentext.text = text;
+		rentext.alignment = TextAnchor.MiddleCenter;
+		rentext.fontSize = fontSize;
+		rentext.color = color;
+		rentext.font = Resources.GetBuiltinResource(typeof(Font), "Arial.ttf") as Font;
+		rentext.transform.localScale = new Vector3(1f, 1f, 1f);
+		obj.transform.position = new Vector3(x, y, 0f);
+		obj.GetComponent<RectTransform>().sizeDelta = new Vector2(width, height);
+	}
+	
+	public void ClearNumberField()
 	{
 		foreach(GameObject obj in fieldtexts)
 		{
@@ -256,5 +201,30 @@ public class Renderer : MonoBehaviour
 		}
 		
 		fieldtexts.Clear();
+	}
+	
+	public void ClearGrid()
+	{
+		foreach(GameObject obj in gridlines)
+		{
+			Destroy(obj);
+		}
+		
+		gridlines.Clear();
+	}
+	
+	public void ClearAreaSums()
+	{
+		foreach(GameObject obj in areaObjs)
+		{
+			Destroy(obj);
+		}
+		
+		areaObjs.Clear();
+	}
+	
+	public bool GetLogger()
+	{
+		return logger;
 	}
 }

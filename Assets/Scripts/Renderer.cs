@@ -14,7 +14,7 @@ public class Renderer : MonoBehaviour
 	
 	public List<int[,]> history = new List<int[,]>();
 	public List<Color[,]> historySupport = new List<Color[,]>();
-	bool logger = true;
+	public bool logger = true;
 	int currentPos = 0;
 	int savedPos = 0;
 	
@@ -81,6 +81,10 @@ public class Renderer : MonoBehaviour
 			currentPos = savedPos;
 			RenderNumberField(history[currentPos], historySupport[currentPos]);
 		}
+		
+		GameObject obj = new GameObject("peter");
+		RenderText(obj, currentPos.ToString(), -1f, -3f, 30, Color.black);
+		fieldtexts.Add(obj);
     }
 	
 	public void RenderNumberField(int[,] numberField)//render black text
@@ -174,7 +178,7 @@ public class Renderer : MonoBehaviour
 		{
 			int[] pos = ag.FindPositionOfArea(areaField, i);
 			GameObject textobj = new GameObject("textobj");
-			RenderText(textobj, areaSums[i].ToString(), (float)(pos[1]) + 0.2f, (float)(-pos[0]) - 0.2f, 20, Color.black);
+			RenderText(textobj, areaSums[i].ToString(), (float)(pos[1]) + 0.25f, (float)(-pos[0]) - 0.25f, 30, Color.black);
 			areaObjs.Add(textobj);
 		}
 	}

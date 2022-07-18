@@ -23,6 +23,7 @@ public class UIManager : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
+		
     }
 	
 	void ClickGenerateButton()
@@ -38,5 +39,6 @@ public class UIManager : MonoBehaviour
 		r.RenderNumberField(numberField);
 		r.RenderGrid(areaField);
 		r.RenderAreaSums(areaField, areaSums);
+		s.Solve(numberField, areaField, areaSums, true);
     }
 }

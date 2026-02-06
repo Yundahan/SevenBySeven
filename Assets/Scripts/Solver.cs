@@ -50,7 +50,7 @@ public class Solver : MonoBehaviour
 		
 		List<Vector2Int> guessHistory = new List<Vector2Int>();
 		List<List<Vector2Int>> derivationHistory = new List<List<Vector2Int>>();
-		List<Vector2Int> dPosList = new List<Vector2Int>();
+		List<Vector2Int> derivationPositionList = new List<Vector2Int>();
 		bool mistake = false;
 		bool backtrack = true;
 		
@@ -66,8 +66,8 @@ public class Solver : MonoBehaviour
 			
 			if(!mistake)
 			{
-				dPosList = new List<Vector2Int>();//list of the derivations for one single step/guess
-				derivationHistory.Add(dPosList);
+				derivationPositionList = new List<Vector2Int>();//list of the derivations for one single step/guess
+				derivationHistory.Add(derivationPositionList);
 			}
 			
 			while(changeOccurred && !mistake)//derivations
@@ -75,12 +75,12 @@ public class Solver : MonoBehaviour
 				changeOccurred = false;
 				mistake = false;
 				
-				if(!InsertLastNumbersForAreas(solvedField, areaField, areaSums, dPosList))
+				if(!InsertLastNumbersForAreas(solvedField, areaField, areaSums, derivationPositionList))
 				{
 					mistake = true;
 					break;
 				}
-				if(!InsertLastNumbersForRowsColumns(solvedField, areaField, areaSums, dPosList))
+				if(!InsertLastNumbersForRowsColumns(solvedField, areaField, areaSums, derivationPositionList))
 				{
 					mistake = true;
 					break;
@@ -129,18 +129,14 @@ public class Solver : MonoBehaviour
 					{
 						bool numberFound = false;
 						
-						for(int k = solvedField[x, y]; k < 7; k++)
+						for(int k = solvedField[x, y] + 1; k <= 7; k++)
 						{
-							float quotient1 = areaProducts[areaField[x, y]] / primes[k];
-							float quotient2 = rowProducts[x] / primes[k];
-							float quotient3 = columnProducts[y] / primes[k];
-							
-							if(!fieldGenerator.HasDecimals(quotient1) && !fieldGenerator.HasDecimals(quotient2) && !fieldGenerator.HasDecimals(quotient3) && DoesNumberFitArea(solvedField, areaField, areaSums, x, y))//k can be inserted here
+							if(this.primeManager.DoesNumberFitInField(k, x, y, columnProducts, rowProducts, areaField, areaProducts) && DoesNumberFitAreaSum(solvedField, areaField, areaSums, x, y))//k can be inserted here
 							{
-								solvedField[x, y] = k + 1;
-								areaProducts[areaField[x, y]] /= primes[k];
-								rowProducts[x] /= primes[k];
-								columnProducts[y] /= primes[k];
+								solvedField[x, y] = k;
+								areaProducts[areaField[x, y]] /= this.primeManager.GetPrimeForNumber(k);
+								rowProducts[x] /= this.primeManager.GetPrimeForNumber(k);
+								columnProducts[y] /= this.primeManager.GetPrimeForNumber(k);
 								numberFound = true;
 								break;
 							}
@@ -178,19 +174,15 @@ public class Solver : MonoBehaviour
 							spaceFound = true;
 							bool numberFound = false;
 							
-							for(int k = 0; k < 7; k++)//find a fitting number
+							for(int k = 1; k <= 7; k++)//find a fitting number
 							{
-								float quotient1 = areaProducts[areaField[i, j]] / primes[k];
-								float quotient2 = rowProducts[i] / primes[k];
-								float quotient3 = columnProducts[j] / primes[k];
-								
-								if(!fieldGenerator.HasDecimals(quotient1) && !fieldGenerator.HasDecimals(quotient2) && !fieldGenerator.HasDecimals(quotient3) && DoesNumberFitArea(solvedField, areaField, areaSums, i, j))//k can be inserted here
+								if(this.primeManager.DoesNumberFitInField(k, i, j, columnProducts, rowProducts, areaField, areaProducts) && DoesNumberFitAreaSum(solvedField, areaField, areaSums, i, j))//k can be inserted here
 								{
-									solvedField[i, j] = k + 1;
-									areaProducts[areaField[i, j]] /= primes[k];
-									rowProducts[i] /= primes[k];
-									columnProducts[j] /= primes[k];
-									guessHistory.Add(new Vector2Int(i, j));
+									solvedField[i, j] = k;
+                                    areaProducts[areaField[i, j]] /= this.primeManager.GetPrimeForNumber(k);
+                                    rowProducts[i] /= this.primeManager.GetPrimeForNumber(k);
+                                    columnProducts[j] /= this.primeManager.GetPrimeForNumber(k);
+                                    guessHistory.Add(new Vector2Int(i, j));
 									numberFound = true;
 									emptySpotsPerArea[areaField[i, j]]--;
 									break;
@@ -265,7 +257,7 @@ public class Solver : MonoBehaviour
 		
 		List<Vector2Int> guessHistory = new List<Vector2Int>();
 		List<List<Vector2Int>> derivationHistory = new List<List<Vector2Int>>();
-		List<Vector2Int> dPosList = new List<Vector2Int>();
+		List<Vector2Int> derivationPositionList = new List<Vector2Int>();
 		bool mistake = false;
 		bool backtrack = true;
 		
@@ -281,8 +273,8 @@ public class Solver : MonoBehaviour
 			
 			if(!mistake)
 			{
-				dPosList = new List<Vector2Int>();//list of the derivations for one single step/guess
-				derivationHistory.Add(dPosList);
+				derivationPositionList = new List<Vector2Int>();//list of the derivations for one single step/guess
+				derivationHistory.Add(derivationPositionList);
 			}
 			
 			while(changeOccurred && !mistake)//derivations
@@ -290,12 +282,12 @@ public class Solver : MonoBehaviour
 				changeOccurred = false;
 				mistake = false;
 				
-				if(!InsertLastNumbersForAreas(solvedField, areaField, areaSums, dPosList))
+				if(!InsertLastNumbersForAreas(solvedField, areaField, areaSums, derivationPositionList))
 				{
 					mistake = true;
 					break;
 				}
-				if(!InsertLastNumbersForRowsColumns(solvedField, areaField, areaSums, dPosList))
+				if(!InsertLastNumbersForRowsColumns(solvedField, areaField, areaSums, derivationPositionList))
 				{
 					mistake = true;
 					break;
@@ -348,19 +340,15 @@ public class Solver : MonoBehaviour
 					{
 						bool numberFound = false;
 						
-						for(int k = solvedField[x, y]; k < 7; k++)
+						for(int k = solvedField[x, y] + 1; k <= 7; k++)
 						{
-							float quotient1 = areaProducts[areaField[x, y]] / primes[k];
-							float quotient2 = rowProducts[x] / primes[k];
-							float quotient3 = columnProducts[y] / primes[k];
-							
-							if(!fieldGenerator.HasDecimals(quotient1) && !fieldGenerator.HasDecimals(quotient2) && !fieldGenerator.HasDecimals(quotient3) && DoesNumberFitArea(solvedField, areaField, areaSums, x, y))//k can be inserted here
+							if(this.primeManager.DoesNumberFitInField(k, x, y, columnProducts, rowProducts, areaField, areaProducts) && DoesNumberFitAreaSum(solvedField, areaField, areaSums, x, y))//k can be inserted here
 							{
-								solvedField[x, y] = k + 1;
-								areaProducts[areaField[x, y]] /= primes[k];
-								rowProducts[x] /= primes[k];
-								columnProducts[y] /= primes[k];
-								numberFound = true;
+								solvedField[x, y] = k;
+                                areaProducts[areaField[x, y]] /= this.primeManager.GetPrimeForNumber(k);
+                                rowProducts[x] /= this.primeManager.GetPrimeForNumber(k);
+                                columnProducts[y] /= this.primeManager.GetPrimeForNumber(k);
+                                numberFound = true;
 								break;
 							}
 						}
@@ -397,19 +385,15 @@ public class Solver : MonoBehaviour
 							spaceFound = true;
 							bool numberFound = false;
 							
-							for(int k = 0; k < 7; k++)//find a fitting number
+							for(int k = 1; k <= 7; k++)//find a fitting number
 							{
-								float quotient1 = areaProducts[areaField[i, j]] / primes[k];
-								float quotient2 = rowProducts[i] / primes[k];
-								float quotient3 = columnProducts[j] / primes[k];
-								
-								if(!fieldGenerator.HasDecimals(quotient1) && !fieldGenerator.HasDecimals(quotient2) && !fieldGenerator.HasDecimals(quotient3) && DoesNumberFitArea(solvedField, areaField, areaSums, i, j))//k can be inserted here
+								if(this.primeManager.DoesNumberFitInField(k, i, j, columnProducts, rowProducts, areaField, areaProducts) && DoesNumberFitAreaSum(solvedField, areaField, areaSums, i, j))//k can be inserted here
 								{
-									solvedField[i, j] = k + 1;
-									areaProducts[areaField[i, j]] /= primes[k];
-									rowProducts[i] /= primes[k];
-									columnProducts[j] /= primes[k];
-									guessHistory.Add(new Vector2Int(i, j));
+									solvedField[i, j] = k;
+                                    areaProducts[areaField[i, j]] /= this.primeManager.GetPrimeForNumber(k);
+                                    rowProducts[i] /= this.primeManager.GetPrimeForNumber(k);
+                                    columnProducts[j] /= this.primeManager.GetPrimeForNumber(k);
+                                    guessHistory.Add(new Vector2Int(i, j));
 									numberFound = true;
 									emptySpotsPerArea[areaField[i, j]]--;
 									break;
@@ -503,7 +487,7 @@ public class Solver : MonoBehaviour
 	{
 		bool noMistake = true;
 		int areaCount = areaSums.Length;
-		List<int[]> changes = new List<int[]>();//add position where change occurred
+		List<Vector2Int> changes = new List<Vector2Int>();//add position where change occurred
 		
 		for(int i = 0; i < 7; i++)
 		{
@@ -538,7 +522,7 @@ public class Solver : MonoBehaviour
 					
 					if(!fieldGenerator.HasDecimals(quotient1) && !fieldGenerator.HasDecimals(quotient2) && !fieldGenerator.HasDecimals(quotient3))
 					{
-						changes.Add(new int[2] {i, j});
+						changes.Add(new Vector2Int(i, j));
 						solvedField[i, j] = missingNumber;
 						areaProducts[areaField[i, j]] /= primes[missingNumber - 1];
 						rowProducts[i] /= primes[missingNumber - 1];
@@ -584,7 +568,7 @@ public class Solver : MonoBehaviour
 		int areaCount = areaSums.Length;
 		int[] emptySpotsPerRow = new int[7];
 		int[] emptySpotsPerColumn = new int[7];
-		List<int[]> changes = new List<int[]>();//add array of format (i, j, number)
+		List<Vector2Int> changes = new List<Vector2Int>();
 		
 		for(int i = 0; i < 7; i++)
 		{
@@ -621,9 +605,9 @@ public class Solver : MonoBehaviour
 						float quotient1 = areaProducts[currentArea] / primes[missingNumber - 1];
 						float quotient2 = columnProducts[j] / primes[missingNumber - 1];
 						
-						if(!fieldGenerator.HasDecimals(quotient1) && !fieldGenerator.HasDecimals(quotient2) && DoesNumberFitArea(solvedField, areaField, areaSums, i, j))
+						if(!fieldGenerator.HasDecimals(quotient1) && !fieldGenerator.HasDecimals(quotient2) && DoesNumberFitAreaSum(solvedField, areaField, areaSums, i, j))
 						{
-							changes.Add(new int[2] {i, j});
+							changes.Add(new Vector2Int(i, j));
 							solvedField[i, j] = missingNumber;
 							emptySpotsPerColumn[j]--;
 							areaProducts[currentArea] /= primes[missingNumber - 1];
@@ -657,9 +641,9 @@ public class Solver : MonoBehaviour
 						float quotient1 = areaProducts[currentArea] / primes[missingNumber - 1];
 						float quotient2 = rowProducts[i] / primes[missingNumber - 1];
 						
-						if(!fieldGenerator.HasDecimals(quotient1) && !fieldGenerator.HasDecimals(quotient2) && DoesNumberFitArea(solvedField, areaField, areaSums, i, j))
+						if(!fieldGenerator.HasDecimals(quotient1) && !fieldGenerator.HasDecimals(quotient2) && DoesNumberFitAreaSum(solvedField, areaField, areaSums, i, j))
 						{
-							changes.Add(new int[2] {i, j});
+							changes.Add(new Vector2Int(i, j));
 							solvedField[i, j] = missingNumber;
 							emptySpotsPerRow[i]--;
 							areaProducts[currentArea] /= primes[missingNumber - 1];
@@ -701,7 +685,7 @@ public class Solver : MonoBehaviour
 		return noMistake;
 	}
 	
-	bool DoesNumberFitArea(int[,] numberField, int[,] areaField, int[] areaSums, int x, int y)
+	bool DoesNumberFitAreaSum(int[,] numberField, int[,] areaField, int[] areaSums, int x, int y)
 	{
 		int currentArea = areaField[x, y];
 		int number = numberField[x, y];

@@ -83,7 +83,7 @@ public class ClueGenerator : MonoBehaviour
 			int[,] copy = CopyNumberField(numberField);
 			int res = solver.SolveCount(copy, areaField, areaSums, false);
 			
-			if(res == 2)
+			if(res >= 2)
 			{
 				numberField[pos.x, pos.y] = number;
 				clueCount++;

@@ -5,32 +5,15 @@ using UnityEngine;
 
 public class AreaGenerator : MonoBehaviour
 {
-	public FieldGenerator fg;
+	public FieldGenerator fieldGenerator;
+	public PrimeManager primeManager;
 	
 	const double mean = 4d;
 	const double sigma = 0.7d;
-	const float mergeProbability = 0.8f;
-	const int maxAreaSize = 7;
 	
-	int[,] numberField;
 	System.Random rand = new System.Random();
-	int[] sizes = new int[maxAreaSize + 1];
 	
-	float[] primes = {2f, 3f, 5f, 7f, 11f, 13f, 17f};
-	
-    // Start is called before the first frame update
-    void Start()
-    {
-		
-    }
-
-    // Update is called once per frame
-    void Update()
-    {
-        
-    }
-	
-	public int[,] GenerateAreas(int[,] nf, float t)
+	public int[,] GenerateAreas(int[,] numberField, float t)
 	{
 		int[,] areaField = new int[7, 7];
 		
@@ -40,7 +23,7 @@ public class AreaGenerator : MonoBehaviour
 			return areaField;
 		}
 		
-		List<int[]> dofs = new List<int[]>();
+		List<int[]> degreesOfFreedom = new List<int[]>();
 		List<int[]> free = new List<int[]>();
 		int count = 49;
 		int areaCount = 0;
@@ -56,128 +39,97 @@ public class AreaGenerator : MonoBehaviour
 		
 		while (count > 0)
 		{
-			/*int x = 0;
-			int y = 0;
-			bool found = false;
-			
-			for(x = 0; x < 7; x++)
-			{
-				for(y = 0; y < 7; y++)
-				{
-					if(areaField[x, y] == -1)
-					{
-						areaField[x, y] = areaCount;
-						count--;
-						found = true;
-						break;
-					}
-				}
-				
-				if(found)
-				{
-					break;
-				}
-			}*/
-			
 			int index = UnityEngine.Random.Range(0, free.Count);//randomly choose next position for new area
 			int x = free[index][0];
 			int y = free[index][1];
 			areaField[x, y] = areaCount;
 			count--;
-			free.RemoveAt(index);//cutoff here to enable the old version above
-			int areaSize = GenerateAreaSize() - 1;
-			dofs.Clear();
-			float product = 510510f / primes[nf[x, y] - 1];
-			
-			if(areaSize < 1)//clamp area size for extreme values
-			{
-				areaSize = 1;
-			}
-			else if(areaSize > 6)
-			{
-				areaSize = 6;
-			}
+			free.RemoveAt(index);
+			int areaSize = GenerateAreaSize();
+			degreesOfFreedom.Clear();
+			float product = 510510f / this.primeManager.GetPrimeForNumber(numberField[x, y]);
 				
 			while(count > 0 && areaSize > 0)
 			{
-				if(x < 6 && areaField[x + 1, y] == -1 && !fg.HasDecimals(product / primes[nf[x + 1, y] - 1]))//check which adjacent positions are still free
+				if(x < 6 && areaField[x + 1, y] == -1 && !this.primeManager.IsNumberContainedInRowColumnArea(numberField[x + 1, y], product))//check which adjacent positions are still free
 				{
 					int[] newPos = new int[2] {x + 1, y};
 					
-					if(FindArrayInList(dofs, newPos) == -1)
+					if(FindArrayInList(degreesOfFreedom, newPos) == -1)
 					{
-						dofs.Add(new int[2] {x + 1, y});
+						degreesOfFreedom.Add(new int[2] {x + 1, y});
 					}
 				}
-				if(x > 0 && areaField[x - 1, y] == -1 && !fg.HasDecimals(product / primes[nf[x - 1, y] - 1]))
+				if(x > 0 && areaField[x - 1, y] == -1 && !this.primeManager.IsNumberContainedInRowColumnArea(numberField[x - 1, y], product))
 				{
 					int[] newPos = new int[2] {x - 1, y};
 					
-					if(FindArrayInList(dofs, newPos) == -1)
+					if(FindArrayInList(degreesOfFreedom, newPos) == -1)
 					{
-						dofs.Add(new int[2] {x - 1, y});
+						degreesOfFreedom.Add(new int[2] {x - 1, y});
 					}
 				}
-				if(y < 6 && areaField[x, y + 1] == -1 && !fg.HasDecimals(product / primes[nf[x, y + 1] - 1]))
+				if(y < 6 && areaField[x, y + 1] == -1 && !this.primeManager.IsNumberContainedInRowColumnArea(numberField[x, y + 1], product))
 				{
 					int[] newPos = new int[2] {x, y + 1};
 					
-					if(FindArrayInList(dofs, newPos) == -1)
+					if(FindArrayInList(degreesOfFreedom, newPos) == -1)
 					{
-						dofs.Add(new int[2] {x, y + 1});
+						degreesOfFreedom.Add(new int[2] {x, y + 1});
 					}
 				}
-				if(y > 0 && areaField[x, y - 1] == -1 && !fg.HasDecimals(product / primes[nf[x, y - 1] - 1]))
+				if(y > 0 && areaField[x, y - 1] == -1 && !this.primeManager.IsNumberContainedInRowColumnArea(numberField[x, y - 1], product))
 				{
 					int[] newPos = new int[2] {x, y - 1};
 					
-					if(FindArrayInList(dofs, newPos) == -1)
+					if(FindArrayInList(degreesOfFreedom, newPos) == -1)
 					{
-						dofs.Add(new int[2] {x, y - 1});
+						degreesOfFreedom.Add(new int[2] {x, y - 1});
 					}
 				}
 				
-				if(dofs.Count == 0)//no space left around the area
+				if(degreesOfFreedom.Count == 0)//no space left around the area
 				{
 					break;
 				}
 				
-				int number = UnityEngine.Random.Range(0, dofs.Count);
-				x = dofs[number][0];
-				y = dofs[number][1];
+				int number = UnityEngine.Random.Range(0, degreesOfFreedom.Count);
+				x = degreesOfFreedom[number][0];
+				y = degreesOfFreedom[number][1];
 				count--;
 				areaSize--;
-				product /= primes[nf[x, y] - 1];
-				int pos = FindArrayInList(free, dofs[number]);
+				product /= this.primeManager.GetPrimeForNumber(numberField[x, y]);
+				int pos = FindArrayInList(free, degreesOfFreedom[number]);
 				
 				if(pos == -1)
 				{
-					Debug.Log("position contained in dofs was not found in free");
+					Debug.Log("position contained in degreesOfFreedom was not found in free");
 				}
 				
 				free.RemoveAt(pos);
 				areaField[x, y] = areaCount;
-				dofs.RemoveAt(number);
+				degreesOfFreedom.RemoveAt(number);
 				pos = 0;
 				
+				//look for the newly added position in the degreesOfFreedom and remove it from there
 				while(pos != -1)
 				{
-					pos = FindArrayInList(dofs, new int[] {x, y});
+					pos = FindArrayInList(degreesOfFreedom, new int[] {x, y});
 					
 					if(pos != -1)
 					{
-						dofs.RemoveAt(pos);
+						degreesOfFreedom.RemoveAt(pos);
 					}
 				}
 				
-				int value = nf[x, y];//remove positions from dofs which have the same value that was just added
+				int value = numberField[x, y];//remove positions from degreesOfFreedom which have the same value that was just added
 				
-				for(int i = dofs.Count - 1; i > -1; i--)
+				for(int i = degreesOfFreedom.Count - 1; i > -1; i--)
 				{
-					int[] position = dofs[i];
-					if(nf[position[0], position[1]] == value)
+					int[] position = degreesOfFreedom[i];
+					if(numberField[position[0], position[1]] == value)
 					{
-						dofs.RemoveAt(i);
+						degreesOfFreedom.RemoveAt(i);
 					}
 				}
 			}
@@ -185,19 +137,16 @@ public class AreaGenerator : MonoBehaviour
 			areaCount++;
 		}
 		
-		areaField = MergeOnes(nf, areaField, areaCount);
-		CalcAreaSizes(areaField, areaCount, false);
-		
-		if(!TestAreaCorrectness(nf, areaField, areaCount))
+		if(!TestAreaCorrectness(numberField, areaField, areaCount))
 		{
 			Debug.Log("Areas are incorrect, recalculate...");
-			return GenerateAreas(nf, t + 1f);
+			return GenerateAreas(numberField, t + 1f);
 		}
 		
 		return areaField;
 	}
 	
-	public int[] CalcSums(int[,] nf, int[,] af)//calculate the sums for the areas
+	public int[] CalcSums(int[,] numberField, int[,] areaField)//calculate the sums for the areas
 	{
 		int areaCount = 0;
 		
@@ -205,9 +154,9 @@ public class AreaGenerator : MonoBehaviour
 		{
 			for(int j = 0; j < 7; j++)
 			{
-				if(af[i, j] > areaCount)
+				if(areaField[i, j] > areaCount)
 				{
-					areaCount = af[i, j];
+					areaCount = areaField[i, j];
 				}
 			}
 		}
@@ -218,20 +167,20 @@ public class AreaGenerator : MonoBehaviour
 		{
 			for(int j = 0; j < 7; j++)
 			{
-				res[af[i, j]] += nf[i, j];
+				res[areaField[i, j]] += numberField[i, j];
 			}
 		}
 		
 		return res;
 	}
 	
-	public int[] FindPositionOfArea(int[,] af, int areaID)//find the first position at which an area is found
+	public int[] FindPositionOfArea(int[,] areaField, int areaID)//find the first position at which an area is found
 	{
 		for(int i = 0; i < 7; i++)
 		{
 			for(int j = 0; j < 7; j++)
 			{
-				if(af[i, j] == areaID)
+				if(areaField[i, j] == areaID)
 				{
 					return new int[2] {i, j};
 				}
@@ -258,53 +207,7 @@ public class AreaGenerator : MonoBehaviour
 		return -1;
 	}
 	
-	int[,] MergeOnes(int[,] nf, int[,] af, int areaCount)//merge areas of size one with neighboring fields
-	{
-		int[] areaArray = new int[areaCount];
-		List<int[]> candidates = new List<int[]>();
-		
-		for(int i = 0; i < 7; i++)
-		{
-			for(int j = 0; j < 7; j++)
-			{
-				areaArray[af[i, j]]++;
-			}
-		}
-		
-		for(int i = 0; i < areaCount; i++)
-		{
-			if(areaArray[i] == 1 && mergeProbability > UnityEngine.Random.Range(0f, 1f))
-			{
-				candidates.Clear();
-				int[] position = FindPositionOfArea(af, i);
-				ReturnNeighbors(position, candidates);
-				
-				for(int j = candidates.Count - 1; j >= 0; j--)//ensure that the number is not already contained
-				{
-					int[] candidatePos = candidates[j];
-					int candidateArea = af[candidatePos[0], candidatePos[1]];
-					float product = GetAreaProduct(nf, af, candidateArea);
-					
-					if(fg.HasDecimals(product / primes[nf[candidatePos[0], candidatePos[1]] - 1]))
-					{
-						candidates.RemoveAt(j);
-					}
-				}
-				
-				if(candidates.Count > 0)//merge
-				{
-					int mergePos = UnityEngine.Random.Range(0, candidates.Count);
-					areaArray[af[candidates[mergePos][0], candidates[mergePos][1]]]++;
-					areaArray[i]--;
-					af[position[0], position[1]] = af[candidates[mergePos][0], candidates[mergePos][1]];
-				}
-			}
-		}
-		
-		return af;
-	}
-	
-	float GetAreaProduct(int[,] nf, int[,] af, int areaID)
+	float GetAreaProduct(int[,] numberField, int[,] areaField, int areaID)
 	{
 		float product = 510510f;
 		
@@ -312,9 +215,9 @@ public class AreaGenerator : MonoBehaviour
 		{
 			for(int j = 0; j < 7; j++)
 			{
-				if(af[i, j] == areaID)
+				if(areaField[i, j] == areaID)
 				{
-					product /= primes[nf[i, j] - 1];
+					product /= this.primeManager.GetPrimeForNumber(numberField[i, j]);
 				}
 			}
 		}
@@ -351,34 +254,21 @@ public class AreaGenerator : MonoBehaviour
 		double u2 = 1.0 - rand.NextDouble();
 		double randStdNormal = Math.Sqrt(-2.0 * Math.Log(u1)) * Math.Sin(2.0 * Math.PI * u2);
 		double randNormal = mean + sigma * randStdNormal;
-		int areaSize = (int)(randNormal + 0.5d);
-		return areaSize;
+		int areaSize = (int)(randNormal + 0.5d) - 1;
+
+        if (areaSize < 1)//clamp area size for extreme values
+        {
+            areaSize = 1;
+        }
+        else if (areaSize > 6)
+        {
+            areaSize = 6;
+        }
+
+        return areaSize;
 	}
 	
-	void CalcAreaSizes(int[,] areaField, int areaCount, bool print)//calculate the size of each area and store it in the sizes array
-	{
-		int[] array = new int[areaCount];
-		
-		for(int i = 0; i < 7; i ++)
-		{
-			for(int j = 0; j < 7; j++)
-			{
-				array[areaField[i, j]]++;
-			}
-		}
-		
-		for(int i = 0; i < areaCount; i++)
-		{
-			if(print)
-			{
-				Debug.Log(i + ": " + array[i]);
-			}
-			
-			sizes[array[i]]++;
-		}
-	}
-	
-	bool TestAreaCorrectness(int[,] nf, int[,] af, int areaCount)//ensure that no area contains a number more than once
+	bool TestAreaCorrectness(int[,] numberField, int[,] areaField, int areaCount)//ensure that no area contains a number more than once
 	{
 		float[] areas = new float[areaCount];
 		
@@ -391,9 +281,9 @@ public class AreaGenerator : MonoBehaviour
 		{
 			for(int j = 0; j < 7; j++)
 			{
-				areas[af[i, j]] /= primes[nf[i, j] - 1];
+				areas[areaField[i, j]] /= this.primeManager.GetPrimeForNumber(numberField[i, j]);
 				
-				if(fg.HasDecimals(areas[af[i, j]]))
+				if(this.primeManager.HasDecimals(areas[areaField[i, j]]))
 				{
 					return false;
 				}
@@ -401,18 +291,5 @@ public class AreaGenerator : MonoBehaviour
 		}
 		
 		return true;
-	}
-	
-	void OutputSizes()//print the currently stored sizes
-	{
-		int sum = 0;
-		
-		for(int i = 1; i < sizes.Length; i++)
-		{
-			Debug.Log(i + ": " + sizes[i]);
-			sum += sizes[i] * i;
-		}
-		
-		Debug.Log("Checksum: " + sum);
 	}
 }

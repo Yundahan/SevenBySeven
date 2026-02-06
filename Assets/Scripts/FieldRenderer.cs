@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 
-public class Renderer : MonoBehaviour
+public class FieldRenderer : MonoBehaviour
 {
 	public AreaGenerator ag;
 	public Canvas canvas;
@@ -191,7 +191,7 @@ public class Renderer : MonoBehaviour
 		rentext.alignment = TextAnchor.MiddleCenter;
 		rentext.fontSize = fontSize;
 		rentext.color = color;
-		rentext.font = Resources.GetBuiltinResource(typeof(Font), "Arial.ttf") as Font;
+		rentext.font = Resources.GetBuiltinResource(typeof(Font), "LegacyRuntime.ttf") as Font;
 		rentext.transform.localScale = new Vector3(1f, 1f, 1f);
 		obj.transform.position = new Vector3(x, y, 0f);
 		obj.GetComponent<RectTransform>().sizeDelta = new Vector2(width, height);

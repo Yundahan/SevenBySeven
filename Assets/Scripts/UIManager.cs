@@ -5,11 +5,11 @@ using UnityEngine.UI;
 
 public class UIManager : MonoBehaviour
 {
-	public FieldGenerator fg;
-	public AreaGenerator ag;
-	public Solver s;
-	public Renderer r;
-	public ClueGenerator cg;
+	public FieldGenerator fieldGenerator;
+	public AreaGenerator areaGenerator;
+	public Solver solver;
+	public FieldRenderer fieldRenderer;
+	public ClueGenerator cluegenerator;
 	
 	public Button generateButton;
 	
@@ -28,17 +28,17 @@ public class UIManager : MonoBehaviour
 	
 	void ClickGenerateButton()
     {
-		int[,] numberField = fg.GenerateField(0f);
-		int[,] areaField = ag.GenerateAreas(numberField, 0f);
-		int[] areaSums = ag.CalcSums(numberField, areaField);
-		cg.InitialRemovals(numberField, areaField, areaSums.Length);
-		cg.RemovalLoop(numberField, areaField, areaSums);
-		r.ClearNumberField();
-		r.ClearGrid();
-		r.ClearAreaSums();
-		r.RenderNumberField(numberField);
-		r.RenderGrid(areaField);
-		r.RenderAreaSums(areaField, areaSums);
-		s.Solve(numberField, areaField, areaSums, true);
+		int[,] numberField = fieldGenerator.GenerateField(0f);
+		int[,] areaField = areaGenerator.GenerateAreas(numberField, 0f);
+		int[] areaSums = areaGenerator.CalcSums(numberField, areaField);
+		cluegenerator.InitialRemovals(numberField, areaField, areaSums.Length);
+		cluegenerator.RemovalLoop(numberField, areaField, areaSums);
+        fieldRenderer.ClearNumberField();
+        fieldRenderer.ClearGrid();
+        fieldRenderer.ClearAreaSums();
+        fieldRenderer.RenderNumberField(numberField);
+        fieldRenderer.RenderGrid(areaField);
+        fieldRenderer.RenderAreaSums(areaField, areaSums);
+		solver.Solve(numberField, areaField, areaSums, true);
     }
 }

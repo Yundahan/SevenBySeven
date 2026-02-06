@@ -4,28 +4,12 @@ using UnityEngine;
 
 public class ClueGenerator : MonoBehaviour
 {
-	public Solver s;
-	
-	bool addClues = false;
-	int minoffset = 0;
-	int maxoffset = 3;
-	
-    // Start is called before the first frame update
-    void Start()
-    {
-		
-    }
-
-    // Update is called once per frame
-    void Update()
-    {
-        
-    }
+	public Solver solver;
 	
 	public void InitialRemovals(int[,] numberField, int[,] areaField, int areaCount)//remove numbers so that the puzzle definitely retains a unique solution
 	{
-		int rowIndex = UnityEngine.Random.Range(0, 7);
-		int columnIndex = UnityEngine.Random.Range(0, 7);
+		int rowIndex = Random.Range(0, 7);
+		int columnIndex = Random.Range(0, 7);
 		
 		for(int i = 0; i < 7; i ++)//remove one row and one column
 		{
@@ -33,7 +17,7 @@ public class ClueGenerator : MonoBehaviour
 			numberField[rowIndex, i] = -1;
 		}
 		
-		List<List<int[]>> areaList = new List<List<int[]>>();
+		List<List<Vector2Int>> areaList = new List<List<Vector2Int>>();//list at index i contains all grid positions for area i
 		int[] emptySpotsPerArea = new int[areaCount];
 		
 		for(int i = 0; i < 7; i++)//compute emptySpotsPerArea
@@ -49,7 +33,7 @@ public class ClueGenerator : MonoBehaviour
 		
 		for(int i = 0; i < areaCount; i++)
 		{
-			areaList.Add(new List<int[]>());
+			areaList.Add(new List<Vector2Int>());
 		}
 		
 		for(int i = 0; i < 7; i++)
@@ -58,7 +42,7 @@ public class ClueGenerator : MonoBehaviour
 			{
 				if(numberField[i, j] != -1)
 				{
-					areaList[areaField[i, j]].Add(new int[] {i, j});
+					areaList[areaField[i, j]].Add(new Vector2Int(i, j));
 				}
 			}
 		}
@@ -67,17 +51,16 @@ public class ClueGenerator : MonoBehaviour
 		{
 			if(areaList[i].Count > 0 && emptySpotsPerArea[i] == 0)//remove one number each from areas where no spot is free
 			{
-				int index = UnityEngine.Random.Range(0, areaList[i].Count);
-				numberField[areaList[i][index][0], areaList[i][index][1]] = -1;
+				int index = Random.Range(0, areaList[i].Count);
+				numberField[areaList[i][index].x, areaList[i][index].y] = -1;
 			}
 		}
 	}
 	
 	public int RemovalLoop(int[,] numberField, int[,] areaField, int[] areaSums)
 	{
-		List<int[]> untested = new List<int[]>();
+		List<Vector2Int> untested = new List<Vector2Int>();
 		int clueCount = 0;
-		int offset = 0;
 		
 		for(int i = 0; i < 7; i++)
 		{
@@ -85,29 +68,24 @@ public class ClueGenerator : MonoBehaviour
 			{
 				if(numberField[i, j] != -1)
 				{
-					untested.Add(new int[] {i, j});
+					untested.Add(new Vector2Int(i, j));
 				}
 			}
 		}
 		
-		if(addClues)
+		while(untested.Count > 0)
 		{
-			offset = UnityEngine.Random.Range(minoffset, maxoffset);
-		}
-		
-		while(untested.Count > offset)
-		{
-			int index = UnityEngine.Random.Range(0, untested.Count);
-			int[] pos = untested[index];
-			int number = numberField[pos[0], pos[1]];
-			numberField[pos[0], pos[1]] = -1;
+			int index = Random.Range(0, untested.Count);
+            Vector2Int pos = untested[index];
+			int number = numberField[pos.x, pos.y];
+			numberField[pos.x, pos.y] = -1;
 			untested.RemoveAt(index);
 			int[,] copy = CopyNumberField(numberField);
-			int res = s.SolveCount(copy, areaField, areaSums, false);
+			int res = solver.SolveCount(copy, areaField, areaSums, false);
 			
 			if(res == 2)
 			{
-				numberField[pos[0], pos[1]] = number;
+				numberField[pos.x, pos.y] = number;
 				clueCount++;
 			}
 			else if(res == 0)

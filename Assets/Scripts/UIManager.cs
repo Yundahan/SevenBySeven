@@ -19,12 +19,6 @@ public class UIManager : MonoBehaviour
         Button btn = generateButton.GetComponent<Button>();
         btn.onClick.AddListener(ClickGenerateButton);
     }
-
-    // Update is called once per frame
-    void Update()
-    {
-		
-    }
 	
 	void ClickGenerateButton()
     {
@@ -39,6 +33,6 @@ public class UIManager : MonoBehaviour
         fieldRenderer.RenderNumberField(numberField);
         fieldRenderer.RenderGrid(areaField);
         fieldRenderer.RenderAreaSums(areaField, areaSums);
-		solver.Solve(numberField, areaField, areaSums, true);
+		solver.Solve(numberField, areaField, areaSums, true);//for the history
     }
 }

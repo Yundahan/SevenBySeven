@@ -5,7 +5,6 @@ using UnityEngine;
 
 public class AreaGenerator : MonoBehaviour
 {
-	public FieldGenerator fieldGenerator;
 	public PrimeManager primeManager;
 	
 	const double mean = 4d;
@@ -23,8 +22,8 @@ public class AreaGenerator : MonoBehaviour
 			return areaField;
 		}
 		
-		List<int[]> degreesOfFreedom = new List<int[]>();
-		List<int[]> free = new List<int[]>();
+		List<Vector2Int> degreesOfFreedom = new List<Vector2Int>();
+		List<Vector2Int> free = new List<Vector2Int>();
 		int count = 49;
 		int areaCount = 0;
 	
@@ -33,7 +32,7 @@ public class AreaGenerator : MonoBehaviour
 			for(int j = 0; j < 7; j++)
 			{
 				areaField[i, j] = -1;
-				free.Add(new int[2] {i, j});
+				free.Add(new Vector2Int(i, j));
 			}
 		}
 		
@@ -53,38 +52,38 @@ public class AreaGenerator : MonoBehaviour
 			{
 				if(x < 6 && areaField[x + 1, y] == -1 && !this.primeManager.IsNumberContainedInRowColumnArea(numberField[x + 1, y], product))//check which adjacent positions are still free
 				{
-					int[] newPos = new int[2] {x + 1, y};
+                    Vector2Int newPos = new Vector2Int(x + 1, y);
 					
-					if(FindArrayInList(degreesOfFreedom, newPos) == -1)
+					if(FindVectorInList(degreesOfFreedom, newPos) == -1)
 					{
-						degreesOfFreedom.Add(new int[2] {x + 1, y});
+						degreesOfFreedom.Add(new Vector2Int(x + 1, y));
 					}
 				}
 				if(x > 0 && areaField[x - 1, y] == -1 && !this.primeManager.IsNumberContainedInRowColumnArea(numberField[x - 1, y], product))
 				{
-					int[] newPos = new int[2] {x - 1, y};
+                    Vector2Int newPos = new Vector2Int(x - 1, y);
 					
-					if(FindArrayInList(degreesOfFreedom, newPos) == -1)
+					if(FindVectorInList(degreesOfFreedom, newPos) == -1)
 					{
-						degreesOfFreedom.Add(new int[2] {x - 1, y});
+						degreesOfFreedom.Add(new Vector2Int(x - 1, y));
 					}
 				}
 				if(y < 6 && areaField[x, y + 1] == -1 && !this.primeManager.IsNumberContainedInRowColumnArea(numberField[x, y + 1], product))
 				{
-					int[] newPos = new int[2] {x, y + 1};
+                    Vector2Int newPos = new Vector2Int(x, y + 1);
 					
-					if(FindArrayInList(degreesOfFreedom, newPos) == -1)
+					if(FindVectorInList(degreesOfFreedom, newPos) == -1)
 					{
-						degreesOfFreedom.Add(new int[2] {x, y + 1});
+						degreesOfFreedom.Add(new Vector2Int(x, y + 1));
 					}
 				}
 				if(y > 0 && areaField[x, y - 1] == -1 && !this.primeManager.IsNumberContainedInRowColumnArea(numberField[x, y - 1], product))
 				{
-					int[] newPos = new int[2] {x, y - 1};
+                    Vector2Int newPos = new Vector2Int(x, y - 1);
 					
-					if(FindArrayInList(degreesOfFreedom, newPos) == -1)
+					if(FindVectorInList(degreesOfFreedom, newPos) == -1)
 					{
-						degreesOfFreedom.Add(new int[2] {x, y - 1});
+						degreesOfFreedom.Add(new Vector2Int(x, y - 1));
 					}
 				}
 				
@@ -99,7 +98,7 @@ public class AreaGenerator : MonoBehaviour
 				count--;
 				areaSize--;
 				product /= this.primeManager.GetPrimeForNumber(numberField[x, y]);
-				int pos = FindArrayInList(free, degreesOfFreedom[number]);
+				int pos = FindVectorInList(free, degreesOfFreedom[number]);
 				
 				if(pos == -1)
 				{
@@ -114,7 +113,7 @@ public class AreaGenerator : MonoBehaviour
 				//look for the newly added position in the degreesOfFreedom and remove it from there
 				while(pos != -1)
 				{
-					pos = FindArrayInList(degreesOfFreedom, new int[] {x, y});
+					pos = FindVectorInList(degreesOfFreedom, new Vector2Int(x, y));
 					
 					if(pos != -1)
 					{
@@ -126,8 +125,8 @@ public class AreaGenerator : MonoBehaviour
 				
 				for(int i = degreesOfFreedom.Count - 1; i > -1; i--)
 				{
-					int[] position = degreesOfFreedom[i];
-					if(numberField[position[0], position[1]] == value)
+                    Vector2Int position = degreesOfFreedom[i];
+					if(numberField[position.x, position.y] == value)
 					{
 						degreesOfFreedom.RemoveAt(i);
 					}
@@ -190,13 +189,13 @@ public class AreaGenerator : MonoBehaviour
 		return new int[2] {-1, -1};
 	}
 	
-	int FindArrayInList(List<int[]> list, int[] array)//find first position of a two element array in a list
+	int FindVectorInList(List<Vector2Int> list, Vector2Int vector)//find first occurrence of a Vector2Int in a list
 	{
 		int res = 0;
 		
-		foreach(int[] element in list)
+		foreach(Vector2Int element in list)
 		{
-			if(element[0] == array[0] && element[1] == array[1])
+			if(element.x == vector.x && element.y == vector.y)
 			{
 				return res;
 			}
@@ -205,47 +204,6 @@ public class AreaGenerator : MonoBehaviour
 		}
 		
 		return -1;
-	}
-	
-	float GetAreaProduct(int[,] numberField, int[,] areaField, int areaID)
-	{
-		float product = 510510f;
-		
-		for(int i = 0; i < 7; i++)
-		{
-			for(int j = 0; j < 7; j++)
-			{
-				if(areaField[i, j] == areaID)
-				{
-					product /= this.primeManager.GetPrimeForNumber(numberField[i, j]);
-				}
-			}
-		}
-		
-		return product;
-	}
-	
-	void ReturnNeighbors(int[] pos, List<int[]> res)
-	{
-		int x = pos[0];
-		int y = pos[1];
-		
-		if(x > 0)
-		{
-			res.Add(new int[2] {x - 1, y});
-		}
-		if(x < 6)
-		{
-			res.Add(new int[2] {x + 1, y});
-		}
-		if(y > 0)
-		{
-			res.Add(new int[2] {x, y - 1});
-		}
-		if(y < 6)
-		{
-			res.Add(new int[2] {x, y + 1});
-		}
 	}
 	
 	int GenerateAreaSize()//normal distribution

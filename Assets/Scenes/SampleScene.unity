@@ -594,9 +594,9 @@ GameObject:
   - component: {fileID: 1887377095}
   - component: {fileID: 1887377087}
   - component: {fileID: 1887377089}
-  - component: {fileID: 1887377094}
   - component: {fileID: 1887377090}
   - component: {fileID: 1887377092}
+  - component: {fileID: 1887377094}
   - component: {fileID: 1887377093}
   m_Layer: 0
   m_Name: Manager
@@ -645,7 +645,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 549beaa4f6418d74f96ec87a8ab0999e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  fieldGenerator: {fileID: 1887377087}
   primeManager: {fileID: 1887377095}
 --- !u!114 &1887377090
 MonoBehaviour:
@@ -659,8 +658,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8dcee3f5fe76ce0478a3ab54c4989202, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  fg: {fileID: 1887377087}
-  ren: {fileID: 1887377094}
+  primeManager: {fileID: 1887377095}
+  fieldGenerator: {fileID: 1887377087}
+  fieldRenderer: {fileID: 1887377094}
 --- !u!114 &1887377092
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -673,7 +673,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f461871a10781fe4a941365cc302cc44, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  s: {fileID: 1887377090}
+  solver: {fileID: 1887377090}
 --- !u!114 &1887377093
 MonoBehaviour:
   m_ObjectHideFlags: 0
